@@ -9,7 +9,8 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+import os
+from decouple import config
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,10 +21,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-wh+1dw=8w6jznrhm#5yrs#8%q0k5+s4zn!vc!sltm-^@$pdm6s'
+SECRET_KEY = config("DJANGO_SECRET_KEY")
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = str(os.environ.get("DJANGO_DEBUG")).lower() == "true"
+
+DEBUG = config("DJANGO_DEBUG", default=False, cast=bool)
+
+print("DEBUG",  DEBUG, type(DEBUG))
 
 ALLOWED_HOSTS = [
     ".railway.app", # https://saas.prod.railway.app
@@ -90,6 +96,19 @@ DATABASES = {
     }
 }
 
+CONN_MAX_AGE = config("CONN_MAX_AGE", default=30, cast=int)
+DATABASE_URL = config("DATABASE_URL", cast=str)
+
+
+if DATABASE_URL is not None:
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            default = DATABASE_URL,
+            conn_max_age = CONN_MAX_AGE,
+            conn_health_checks = True,
+        )
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -126,6 +145,20 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_BASE_DIR = BASE_DIR / "staticfiles"
+STATIC_VENDOR_DIR = STATICFILES_BASE_DIR / "vendors"
+
+# source for python manage.py collectstatis
+STATICFILES_DIRS = [
+    STATICFILES_BASE_DIR,
+]
+
+# OUT PUT FOR python manage.py collectstatic
+# LOCAL CDN
+STATIC_ROOT = BASE_DIR / "local-cdn"
+# if not DEBUG:
+#     STATIC_ROOT = BASE_DIR / "prod-cdn"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
